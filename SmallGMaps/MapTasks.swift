@@ -190,15 +190,12 @@ class MapTasks {
                 if let travel = travelMode{
                     var travelModeString = ""
                     
-                    //bug?
-                    let travelNum = travel as! Int
-                    
-                    switch travelNum {
-                    case TravelMode.driving.rawValue:
+                    switch travel {
+                    case TravelMode.driving:
                         travelModeString = "driving"
-                    case TravelMode.walking.rawValue:
+                    case TravelMode.walking:
                         travelModeString = "walking"
-                    case TravelMode.bicycling.rawValue:
+                    case TravelMode.bicycling:
                         travelModeString = "bicycling"
                     default:
                         travelModeString = "driving"
@@ -313,10 +310,10 @@ class MapTasks {
         }
         
         if totalDistanceInMeter < 1000 {
-            totalDistance = "Total Distance: \(totalDistanceInMeter) m"
+            totalDistance = "Total Distance: \(totalDistanceInMeter) 公尺"
         } else {
             let distanceInKm = Double(totalDistanceInMeter) / 1000
-            totalDistance = "Total Distance: \(distanceInKm) Km"
+            totalDistance = "Total Distance: \(distanceInKm) 公里"
         }
         
         let mins  = totalDurationInSeconds / 60
@@ -328,9 +325,9 @@ class MapTasks {
         let remainingSecs  = totalDurationInSeconds % 60
         
         if days == 0 {
-            totalDuration = "Duration: \(remainingHours) h, \(remainingMins) mins, \(remainingSecs) secs"
+            totalDuration = "Duration: \(remainingHours) 小時, \(remainingMins) 分, \(remainingSecs) 秒"
         } else {
-            totalDuration = "Duration: \(days) d, \(remainingHours) h, \(remainingMins) mins, \(remainingSecs) secs"
+            totalDuration = "Duration: \(days) 天, \(remainingHours) 小時, \(remainingMins) 分, \(remainingSecs) 秒"
         }
     }
     

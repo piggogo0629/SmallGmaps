@@ -20,6 +20,9 @@ class ViewController: UIViewController {
     //MARK: - Variables
     var locationManager: CLLocationManager = CLLocationManager()
     var didFindMyLocation: Bool = false
+    deinit {
+        print("deinit: \(didFindMyLocation)")
+    }
     var mapTask = MapTasks()
     var locationMarker: GMSMarker!
     var originMarker: GMSMarker!
@@ -31,6 +34,7 @@ class ViewController: UIViewController {
     
     var travelMode = TravelMode.driving
     
+    //紀錄按下路線規劃的查詢地址，reCreateRoute()用
     var origin = ""
     var destination = ""
     
@@ -78,7 +82,7 @@ class ViewController: UIViewController {
             //This "change" dictionary is passed as a parameter to the method by the system, and by using the NSKeyValueChangeNewKey key we can fetch the new value of the changed property we observe.
             let myLocation: CLLocation = change?[NSKeyValueChangeKey.newKey] as! CLLocation
             
-            viewMap.camera = GMSCameraPosition.camera(withTarget: myLocation.coordinate, zoom: 10.0)
+            viewMap.camera = GMSCameraPosition.camera(withTarget: myLocation.coordinate, zoom: 15.0)
             viewMap.settings.myLocationButton = true
             
             didFindMyLocation = true
@@ -87,19 +91,19 @@ class ViewController: UIViewController {
     
     //MARK: - @IBAction
     @IBAction func findAddress(_ sender: AnyObject) {
-        let addressAlert = UIAlertController(title: "Address Finder", message: "Type the address you want to find", preferredStyle: .alert)
+        let addressAlert = UIAlertController(title: "位置搜尋", message: "請輸入想查詢的地址", preferredStyle: .alert)
         
         addressAlert.addTextField { (textField: UITextField) in
-            textField.placeholder = "Address?"
+            textField.placeholder = "地址?"
         }
         
-        let findAction = UIAlertAction(title: "Find Address", style: .default) { (action: UIAlertAction) in
+        let findAction = UIAlertAction(title: "開始", style: .default) { (action: UIAlertAction) in
             if let address = addressAlert.textFields?[0].text {
                 self.mapTask.geocodeAddress(address, withCompletionHandler: { (status: String, success: Bool) in
                     if success == false {
                         
                         if status == "ZERO_RESULTS" {
-                            self.showAlertWithMessage(alertMessage: "The location could not be found.")
+                            self.showAlertWithMessage(alertMessage: "無法定位至該地址")
                         }
                         
                         //print("==========\(status)==========")
@@ -114,7 +118,7 @@ class ViewController: UIViewController {
             }
         }
         
-        let closeAction = UIAlertAction(title: "Close", style: .cancel, handler: nil)
+        let closeAction = UIAlertAction(title: "關閉", style: .cancel, handler: nil)
         
         addressAlert.addAction(findAction)
         addressAlert.addAction(closeAction)
@@ -123,23 +127,28 @@ class ViewController: UIViewController {
     }
     
     @IBAction func createRoute(_ sender: AnyObject) {
-        let directionAlert = UIAlertController(title: "Create Route", message: "Connect locations with a route:", preferredStyle: .alert)
+        let directionAlert = UIAlertController(title: "規劃路線", message: "連結兩個地址:", preferredStyle: .alert)
         
         directionAlert.addTextField { (textField: UITextField) in
-            textField.placeholder = "Origin?"
+            textField.placeholder = "出發地?"
         }
         
         directionAlert.addTextField { (textField: UITextField) in
-            textField.placeholder = "Destination?"
+            textField.placeholder = "目的地?"
         }
         
-        let createRouteAction = UIAlertAction(title: "Create Route", style: .default) { (action: UIAlertAction) in
+        let createRouteAction = UIAlertAction(title: "開始", style: .default) { (action: UIAlertAction) in
+            if self.routePolyline != nil {
+                self.clearRoute()
+                self.waypointArray.removeAll(keepingCapacity: false)
+            }
+            
             if let originAddress = directionAlert.textFields?[0].text, let destinationAddress = directionAlert.textFields?[1].text {
                 
                 self.mapTask.getDirections(origin: originAddress, destination: destinationAddress, waypoints: nil, travelMode: nil, completionHandler: { (status, success) in
                     if success == false {
                         //if status == "ZERO_RESULTS" {
-                            self.showAlertWithMessage(alertMessage: "The route could not be found.")
+                            self.showAlertWithMessage(alertMessage: "無法規劃該路線")
                         //}
                     } else {
                         self.configureMapAndMarkersForRoute()
@@ -153,7 +162,7 @@ class ViewController: UIViewController {
             }
         }
         
-        let closeAction = UIAlertAction(title: "Close", style: .cancel, handler: nil)
+        let closeAction = UIAlertAction(title: "關閉", style: .cancel, handler: nil)
         
         directionAlert.addAction(createRouteAction)
         directionAlert.addAction(closeAction)
@@ -162,22 +171,22 @@ class ViewController: UIViewController {
     }
     
     @IBAction func changeMapType(_ sender: AnyObject) {
-        let actionSheet = UIAlertController(title: "Map Types", message: "Select Map Type", preferredStyle: .actionSheet)
+        let actionSheet = UIAlertController(title: "地圖類型", message: "請選擇", preferredStyle: .actionSheet)
         
         //一般道路地圖。 會顯示道路、一些人造特徵，以及重要的自然特徵 (例如河流)。 也可以看見道路與特徵標籤。
-        let normalTypeAction = UIAlertAction(title: "Normal", style: .default) { (action: UIAlertAction) in
+        let normalTypeAction = UIAlertAction(title: "一般", style: .default) { (action: UIAlertAction) in
             self.viewMap.mapType = kGMSTypeNormal
         }
         // 地形測量資料。 地圖包括色彩、等高線與標籤，以及透視陰影。 也可以看見一些道路與標籤。
-        let terrianTypeAction = UIAlertAction(title: "Terrian", style: .default) { (action: UIAlertAction) in
+        let terrianTypeAction = UIAlertAction(title: "地形", style: .default) { (action: UIAlertAction) in
             self.viewMap.mapType = kGMSTypeTerrain
         }
         //衛星圖資料加上道路地圖。 也可以看見道路與特徵標籤。
-        let hybridTypeAction = UIAlertAction(title: "Hybrid", style: .default) { (action: UIAlertAction) in
+        let hybridTypeAction = UIAlertAction(title: "混合", style: .default) { (action: UIAlertAction) in
             self.viewMap.mapType = kGMSTypeHybrid
         }
         
-        let cancelAction = UIAlertAction(title: "Close", style: .cancel) { (action: UIAlertAction) in
+        let cancelAction = UIAlertAction(title: "關閉", style: .cancel) { (action: UIAlertAction) in
             
         }
         
@@ -190,24 +199,26 @@ class ViewController: UIViewController {
     }
     
     @IBAction func changeTravelMode(_ sender: AnyObject) {
-        let modeAction = UIAlertController(title: "Travel Mode", message: "Select travel mode:", preferredStyle: .actionSheet)
+        let modeAction = UIAlertController(title: "旅行模式", message: "請選擇:", preferredStyle: .actionSheet)
         
-        let drivingAction = UIAlertAction(title: "Driving", style: .default) { (action: UIAlertAction) in
+        let drivingAction = UIAlertAction(title: "開車", style: .default) { (action: UIAlertAction) in
             self.travelMode = .driving
             self.reCreateRoute()
         }
         
-        let walkingAction = UIAlertAction(title: "Walking", style: .default) { (action: UIAlertAction) in
+        let walkingAction = UIAlertAction(title: "步行", style: .default) { (action: UIAlertAction) in
             self.travelMode = .walking
             self.reCreateRoute()
         }
         
-        let bicyclingAction = UIAlertAction(title: "Bicycling", style: .default) { (action: UIAlertAction) in
+        let bicyclingAction = UIAlertAction(title: "腳踏車", style: .default) { (action: UIAlertAction) in
             self.travelMode = .bicycling
-            self.reCreateRoute()
+            
+            self.showAlertWithMessage(alertMessage: "很抱歉，單車路線不在我們目前涵蓋的服務範圍內")
+            //self.reCreateRoute()
         }
         
-        let closeAction = UIAlertAction(title: "Close", style: .cancel, handler: nil)
+        let closeAction = UIAlertAction(title: "關閉", style: .cancel, handler: nil)
         
         modeAction.addAction(drivingAction)
         modeAction.addAction(walkingAction)
@@ -253,7 +264,7 @@ extension ViewController {
     func showAlertWithMessage(alertMessage: String){
         let alert = UIAlertController(title: "SmallGmaps", message: alertMessage, preferredStyle: UIAlertControllerStyle.alert)
         
-        alert.addAction(UIAlertAction(title: "Close", style: UIAlertActionStyle.default, handler: nil))
+        alert.addAction(UIAlertAction(title: "關閉", style: UIAlertActionStyle.default, handler: nil))
         
         self.present(alert, animated: true, completion: nil)
     }
@@ -332,12 +343,12 @@ extension ViewController {
         
         routePolyline = GMSPolyline(path: path)
         routePolyline.map = viewMap
-        routePolyline.strokeColor = UIColor.cyan
+        routePolyline.strokeColor = UIColor.magenta
         routePolyline.strokeWidth = 3.0
         
-        //let styles = [GMSStrokeStyle.solidColor(UIColor.black),GMSStrokeStyle.solidColor(UIColor.clear)]
-        //let lengths = [15,15]
-        //routePolyline.spans = GMSStyleSpans(path, styles, lengths as [NSNumber], kGMSLengthRhumb)
+        let styles = [GMSStrokeStyle.solidColor(UIColor.black),GMSStrokeStyle.solidColor(UIColor.clear)]
+        let lengths = [15,15]
+        routePolyline.spans = GMSStyleSpans(path, styles, lengths as [NSNumber], kGMSLengthRhumb)
         
         //In order to make your map view fit the polyline of the route you are drawing
         var bounds = GMSCoordinateBounds()
@@ -350,7 +361,7 @@ extension ViewController {
     }
     
     func displayRouteInfo() {
-        labelInfo.text = mapTask.totalDistance + " , " + mapTask.totalDuration
+        labelInfo.text = mapTask.totalDistance + "\n" + mapTask.totalDuration
     }
     
     func reCreateRoute() {
@@ -360,7 +371,7 @@ extension ViewController {
             mapTask.getDirections(origin: origin, destination: destination, waypoints: waypointArray, travelMode: travelMode, completionHandler: { (status, success) in
                 if success == false {
                     //if status == "ZERO_RESULTS" {
-                    self.showAlertWithMessage(alertMessage: "The route could not be found.")
+                    self.showAlertWithMessage(alertMessage: "無法規劃該路線")
                     //}
                 } else {
                     self.configureMapAndMarkersForRoute()
