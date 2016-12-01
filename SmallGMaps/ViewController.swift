@@ -285,7 +285,10 @@ extension ViewController {
     }
     
     func setuplocationMarker(with coordinate: CLLocationCoordinate2D) {
-        clearRoute()
+        
+        if destinationMarker != nil || originMarker != nil {
+            clearRoute()
+        }
         
         //讓map上維持只有一個Marker
         if locationMarker != nil {
@@ -308,6 +311,10 @@ extension ViewController {
     }
     
     func configureMapAndMarkersForRoute() {
+        if locationMarker != nil {
+            locationMarker.map = nil
+        }
+        
         if originMarker != nil {
             originMarker.map = nil
         }
