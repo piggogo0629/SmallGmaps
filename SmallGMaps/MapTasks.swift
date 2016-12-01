@@ -58,8 +58,12 @@ class MapTasks {
             reverseGeoCodeURLString = reverseGeoCodeURLString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
             
             request(reverseGeoCodeURLString).responseJSON(completionHandler: { (response: DataResponse<Any>) in
+                
                 switch response.result {
+                
                 case .success(let value):
+                    //let value = response.result.value!
+                    
                     let dictionary = JSON(value)
                     
                     if let status = dictionary["status"].string {
@@ -125,7 +129,7 @@ class MapTasks {
             })
                 
             /* ========== Origin ========== */
-            
+            /*
             guard let geocodeURL = URL(string: geocodeURLString) else {
                 print("\n==========load JSON files failed===========\n")
                 completionHandler("load JSON files failed", false)
@@ -140,6 +144,8 @@ class MapTasks {
                     
                     var error: NSError?
                     
+                             
+                                
                     let dictionary = JSON(data: geocodeData, options: JSONSerialization.ReadingOptions.mutableContainers, error: &error)
                     
                     if error != nil {
@@ -165,7 +171,7 @@ class MapTasks {
                     print("\n==========\(e.localizedDescription)==========\n")
                 }
             }
-            
+            */
         } else {
             completionHandler("No valid address", false)
         }
@@ -242,7 +248,6 @@ class MapTasks {
                         completionHandler("", false)
                     }
                 })
-                
                 
                 /* ========== Origin ========== */
                 /*
